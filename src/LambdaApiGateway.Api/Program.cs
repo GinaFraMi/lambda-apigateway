@@ -1,44 +1,77 @@
-var builder = WebApplication.CreateBuilder(args);
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.Lambda.AspNetCoreServer;
+using LambdaApiGateway.Application.Interfaces;
+using LambdaApiGateway.Application.Services;
+using LambdaApiGateway.Infrastructure;
+using LambdaApiGateway.Infrastructure.Interfaces;
+using LambdaApiGateway.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+namespace LambdaApiGateway.Api;
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+public class Program
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public static void Main(string[] args) =>
+        CreateHostBuilder(args).Build().Run();
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            });
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+public class Startup
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    private readonly IConfiguration _config;
+    private readonly IWebHostEnvironment _env;
 
-app.MapGet("/weatherforecast", () =>
+    public Startup(IConfiguration configuration, IWebHostEnvironment env)
+    {
+        _config = configuration;
+        _env = env;
+    }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddControllers();
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Users API", Version = "v1" });
+        });
+
+        services.AddInfrastructure(_config);
+        // DI capas
+        services.AddScoped<IUserService, UserService>();
+    }
+
+    public void Configure(IApplicationBuilder app)
+    {
+        if (_env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseRouting();
+        app.UseAuthorization();
+        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+    }
+}
+
+/// <summary>
+/// Punto de entrada para AWS Lambda (API Gateway HTTP API v2)
+/// </summary>
+public class LambdaEntryPoint : APIGatewayHttpApiV2ProxyFunction
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    protected override void Init(IWebHostBuilder builder)
+    {
+        builder.UseStartup<Startup>();
+    }
 }

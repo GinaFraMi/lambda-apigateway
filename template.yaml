@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Users API (.NET 8, DDD, Lambda, API Gateway, DynamoDB)
+
+Globals:
+  Function:
+    Runtime: dotnet8
+    MemorySize: 1024
+    Timeout: 30
+    Architectures: [ x86_64 ]
+
+Resources:
+  UsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Zip
+      Handler: LambdaApiGateway.Api::LambdaApiGateway.Api.LambdaEntryPoint::FunctionHandlerAsync
+      # CodeUri: ./src
+      CodeUri: ./src/LambdaApiGateway.Api
+      Environment:
+        Variables:
+          ASPNETCORE_ENVIRONMENT: Development
+          # Para que el contenedor de SAM alcance DynamoDB Local en tu host:
+          DynamoDB__UseLocal: true
+          DynamoDB__ServiceURL: http://host.docker.internal:8000
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+  Metadata:
+      BuildProperties:
+        ProjectRoot: LambdaApiGateway.Api
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: "API endpoint"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

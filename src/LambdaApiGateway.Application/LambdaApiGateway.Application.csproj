@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <ProjectReference Include="..\LambdaApiGateway.Domain\LambdaApiGateway.Domain.csproj" />
+    <ProjectReference Include="..\LambdaApiGateway.Infrastructure\LambdaApiGateway.Infrastructure.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

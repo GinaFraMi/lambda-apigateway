@@ -7,8 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="9.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.19" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LambdaApiGateway.Domain\LambdaApiGateway.Domain.csproj" />
+    <ProjectReference Include="..\LambdaApiGateway.Infrastructure\LambdaApiGateway.Infrastructure.csproj" />
+    <ProjectReference Include="..\LambdaApiGateway.Application\LambdaApiGateway.Application.csproj" />
   </ItemGroup>
 
 </Project>

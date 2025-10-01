@@ -3,3 +3,5 @@
 
 obj/
 bin/
+.aws-sam/
+.vscode/
